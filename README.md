@@ -8,11 +8,13 @@ appid `2468730`).
 > work does not get lost. Educational / offline research use only. Do **not** take this
 > into online play.
 
-## Demo
+## Demo video
 
-<video src="https://raw.githubusercontent.com/vperpl/DUNGEON-STALKER-OFFLINE-MOD-CONCEPT/main/media/2026-09-29-16-25-28.mp4" controls width="860"></video>
+[![Demo video - Dungeon Stalkers offline mod](https://github.com/vperpl/DUNGEON-STALKER-OFFLINE-MOD-CONCEPT/raw/main/media/poster.jpg)](https://github.com/vperpl/DUNGEON-STALKER-OFFLINE-MOD-CONCEPT/blob/main/media/2026-09-29-16-25-28.mp4)
 
-[Open the video](media/2026-09-29-16-25-28.mp4)
+**[Play the demo video](https://github.com/vperpl/DUNGEON-STALKER-OFFLINE-MOD-CONCEPT/blob/main/media/2026-09-29-16-25-28.mp4)**
+- `media/2026-09-29-16-25-28.mp4` - 26 s, 1920x1080 (15 MB)
+- direct: [download the mp4](https://github.com/vperpl/DUNGEON-STALKER-OFFLINE-MOD-CONCEPT/raw/main/media/2026-09-29-16-25-28.mp4)
 
 ## Status at a glance
 
@@ -22,10 +24,10 @@ appid `2468730`).
 | **What is it?** | Proof of concept / offline checkpoint |
 | **Anti-cheat** | GameGuard bypassed ~**90%** (`bypass.py`, 5 byte patches) |
 | **Working level** | Tutorial map (`L_Tutorial`) - boots straight into it |
-| **Character movement** | WASD walk, mouse look, jump (Space) |
+| **Character movement** | WASD walk, mouse look, jump (Space) - all working |
 | **Crouch** | works |
-| **Interact** | **does not work** (F) |
-| **Hotkeys** | F-row, F1-F9 (F1 toggle input driver, F8 map restart, F9 diagnostics) |
+| **Interact** | **does not work** ([F]) |
+| **Hotkeys** | F-row, **F1**-**F9** (F1 toggle input driver, F8 map restart, F9 diagnostics) |
 
 ### Works
 - GameGuard bypass - `bypass.py`, 5 byte patches
@@ -61,11 +63,22 @@ plus all combat/UI keys.
 ## Download
 
 The full package - bypass, injector, Dumper-7 SDK dump, config, tools and the complete
-write-up - is in the release file:
+write-up - is in the archive:
 
-**[DungeonStalkers-offline-checkpoint.zip](DungeonStalkers-offline-checkpoint.zip)**
+**[DungeonStalkers-offline-checkpoint.zip](https://github.com/vperpl/DUNGEON-STALKER-OFFLINE-MOD-CONCEPT/raw/main/DungeonStalkers-offline-checkpoint.zip)** (4.3 MB)
 
-Unzip it and read `README.md` inside for offsets, quick start, config and gotchas.
+Unzip it and read the `README.md` inside for offsets, quick start, config and gotchas.
+
+## How it works (short version)
+
+1. `bypass.py` launches `DungeonStalkers-Win64-Shipping.exe` and applies 5 byte patches
+   to GameGuard (fake clean result, clear failed-flags, NOP the error dialogs).
+2. Two processes spawn - an nEOS parent and the child that owns the window.
+   `tools/inject.py` injects `Dumper-7.dll` into the **child** with
+   `CreateRemoteThread` + `LoadLibraryW`.
+3. `Dumper/main.cpp` (the only modified file) dumps the SDK, then drives movement by
+   writing `CharacterMovement->Velocity` at `cm+0xB8` and
+   `AController::ControlRotation` at `ctrl+0x328`.
 
 ## Requirements
 
