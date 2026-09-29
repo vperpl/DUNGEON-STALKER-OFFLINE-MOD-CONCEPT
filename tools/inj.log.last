@@ -1,0 +1,39 @@
+=== WSRun begin ===
+objects=100812
+world     = World L_Tutorial_S3.L_Tutorial_S3
+world     = World L_Tutorial_S1.L_Tutorial_S1
+world     = World L_Tutorial_S1_D.L_Tutorial_S1_D
+world     = World L_Tutorial_S5_D.L_Tutorial_S5_D
+gamestate = BP_TutorialGameState_C L_Tutorial.L_Tutorial.PersistentLevel.BP_TutorialGameState_C_2147482019
+  GameModeClass=BP_TutorialGameMode_C
+  AuthorityGameMode=BP_TutorialGameMode_C_2147482290
+ctrl      = 0x14ed18bc0  class=BP_TutorialController_C
+name      = BP_TutorialController_C L_Tutorial.L_Tutorial.PersistentLevel.BP_TutorialController_C_2147481869
+pawn      = 0x1519f8020
+hud       = 0x13bc795b0
+playerinp = 0x13ab03550
+camera    = 0x116e0d560
+pawnfull  = BP_PC_Hilda_A_Tutorial_C L_Tutorial.L_Tutorial.PersistentLevel.BP_PC_Hilda_A_Tutorial_C_2147481859
+ctrlouter = Level L_Tutorial.L_Tutorial.PersistentLevel
+gameinst  = 0x14eb7e6b0  class=BP_WSGameInstance_C
+ctrl+0x340=2  ctrl+0x4C0=9  ctrl+0x554=e4  ctrl+0x620=8
+inactiveInputComp=0x0
+controlRot=(0,90,0)
+fixflag=0xffffffff lasterr=2
+-- phase B SKIPPED (no fix.txt) --
+after: ctrl+0x340=2  ctrl+0x554=e4
+-- phase C: AddMovementInput after fixes --
+  afterC loc=(5200,-1318.58,-109.85)
+=== WSRun done ===
+[drv] ctrl+character acquired
+[drv] engaged cm=0x1517B7090 mode=1 maxWS=228.9 accel=2048.0 vel=(0.0,0.0,0.0)
+[drv] disabled
+[drv] ENABLED
+[drv] disabled
+[drv] ENABLED
+[drv] disabled
+[drv] ENABLED
+[drv] disabled
+[drv] ENABLED
+[drv] disabled
+[drv] ENABLED

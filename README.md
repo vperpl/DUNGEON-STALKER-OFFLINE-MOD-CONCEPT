@@ -63,11 +63,13 @@ plus all combat/UI keys.
 ## Download
 
 The full package - bypass, injector, Dumper-7 SDK dump, config, tools and the complete
-write-up - is in the archive:
+write-up - is in the release archive:
 
-**[DungeonStalkers-offline-checkpoint.zip](https://github.com/vperpl/DUNGEON-STALKER-OFFLINE-MOD-CONCEPT/raw/main/DungeonStalkers-offline-checkpoint.zip)** (4.3 MB)
+**[DungeonStalkers-offline-checkpoint.zip](https://github.com/vperpl/DUNGEON-STALKER-OFFLINE-MOD-CONCEPT/releases/download/0.1/DungeonStalkers-offline-checkpoint.zip)** (4.3 MB)
 
-Unzip it and read the `README.md` inside for offsets, quick start, config and gotchas.
+or browse it directly in this repo (`bypass.py`, `tools/`, `config/`, `bin/`,
+`Dumper-7-main/`). The detailed write-up (offsets, quick start, config, gotchas) is in
+[`docs/TECHNICAL-NOTES.md`](docs/TECHNICAL-NOTES.md).
 
 ## How it works (short version)
 

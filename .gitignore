@@ -1,0 +1,17 @@
+# build output
+Dumper-7-main/**/x64/
+Dumper-7-main/**/Debug/
+Dumper-7-main/**/.vs/
+Dumper-7-main/**/ipch/
+Dumper-7-main/**/GeneratedFiles/
+
+# local artefacts / scratch
+__pycache__/
+*.pyc
+tools/*.png
+tools/byp*.txt
+tools/byp*.err
+tools/inj.log
+tools/strings.txt
+stub.log
+D7.zip
