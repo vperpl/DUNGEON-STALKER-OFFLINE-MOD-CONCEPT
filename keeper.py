@@ -29,16 +29,24 @@ FILE_SHARE_WRITE = 0x00000002
 OPEN_ALWAYS = 4
 INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 
+import shutil
+
 DEFAULT_DIR = os.path.join(
     os.environ.get("LOCALAPPDATA", ""),
     "DungeonStalkers", "Saved", "Config", "Windows",
 )
+SEED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
 
 NAMES = ["Game.ini", "Engine.ini", "Input.ini"]
 
 
 def hold(path):
-    if not os.path.exists(path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    seed = os.path.join(SEED_DIR, os.path.basename(path))
+    if (not os.path.exists(path) or os.path.getsize(path) == 0) and os.path.exists(seed):
+        shutil.copyfile(seed, path)
+        print("restored from config/: %s" % path)
+    elif not os.path.exists(path):
         # create it so we can lock an empty file too
         open(path, "a").close()
     h = k32.CreateFileW(

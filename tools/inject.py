@@ -21,6 +21,27 @@ k32.GetProcAddress.restype = ctypes.c_void_p
 k32.CloseHandle.argtypes = [wt.HANDLE]
 
 ACCESS = 0x0002 | 0x0008 | 0x0010 | 0x0020 | 0x0040 | 0x0400
+user32 = ctypes.WinDLL('user32', use_last_error=True)
+
+
+def find_game_window_pid():
+    found = []
+    @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    def cb(hwnd, lparam):
+        if not user32.IsWindowVisible(hwnd):
+            return True
+        n = user32.GetWindowTextLengthW(hwnd)
+        if n > 0:
+            b = ctypes.create_unicode_buffer(n + 1)
+            user32.GetWindowTextW(hwnd, b, n + 1)
+            if 'Dungeon' in b.value:
+                wpid = wt.DWORD(0)
+                user32.GetWindowThreadProcessId(hwnd, ctypes.byref(wpid))
+                if wpid.value and wpid.value not in found:
+                    found.append(wpid.value)
+        return True
+    user32.EnumWindows(cb, 0)
+    return found[-1] if found else None
 
 
 def inject(pid, dll):
@@ -56,6 +77,20 @@ def inject(pid, dll):
 
 
 if __name__ == '__main__':
-    pid = int(sys.argv[1])
+    arg_pid = sys.argv[1]
     dll = sys.argv[2]
-    print(inject(pid, dll))
+    if arg_pid.lower() == 'auto':
+        pid = find_game_window_pid()
+        if not pid:
+            print('ERROR: no running Dungeon Stalkers window found')
+            sys.exit(1)
+        print('Auto-detected child pid: %d' % pid)
+    else:
+        pid = int(arg_pid)
+    res = inject(pid, dll)
+    if ('failed err=5' in res or 'failed err=87' in res) and arg_pid.lower() != 'auto':
+        alt = find_game_window_pid()
+        if alt and alt != pid:
+            print('%s on pid %d -> retrying with window-owning child pid %d' % (res, pid, alt))
+            res = inject(alt, dll)
+    print(res)

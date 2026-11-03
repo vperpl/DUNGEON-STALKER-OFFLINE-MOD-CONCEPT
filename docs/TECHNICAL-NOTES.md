@@ -53,10 +53,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\Start Dungeon Stalkers.ba
 
 # 4) stop the game, copy the DLL, verify, relaunch
 Copy-Item ".\Dumper-7-main\Dumper\x64\Release\Dumper-7.dll" `
-          "D:\SteamLibrary\steamapps\common\Dungeon Stalkers\DungeonStalkers\Binaries\Win64\Dumper-7.dll" -Force
+          "D:\ian\Steam\steamapps\common\Dungeon Stalkers\DungeonStalkers\Binaries\Win64\Dumper-7.dll" -Force
 
 # 5) inject into the CHILD pid (the one that owns the window)
-python .\tools\inject.py <child_pid> "D:\SteamLibrary\steamapps\common\Dungeon Stalkers\DungeonStalkers\Binaries\Win64\Dumper-7.dll"
+python .\tools\inject.py auto "D:\ian\Steam\steamapps\common\Dungeon Stalkers\DungeonStalkers\Binaries\Win64\Dumper-7.dll"
 
 # 6) wait ~40s, then read the log
 Get-Content .\tools\inj.log

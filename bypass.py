@@ -16,7 +16,13 @@ k32.FlushInstructionCache.argtypes = [wt.HANDLE, ctypes.c_void_p, ctypes.c_size_
 k32.FlushInstructionCache.restype = wt.BOOL
 k32.CloseHandle.argtypes = [wt.HANDLE]
 
-EXE = r"D:\SteamLibrary\steamapps\common\Dungeon Stalkers\DungeonStalkers\Binaries\Win64\DungeonStalkers-Win64-Shipping.exe"
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_REL_EXE = r"DungeonStalkers\Binaries\Win64\DungeonStalkers-Win64-Shipping.exe"
+EXE = (
+    os.path.join(_HERE, _REL_EXE)
+    if os.path.exists(os.path.join(_HERE, _REL_EXE))
+    else os.path.join(os.path.dirname(_HERE), _REL_EXE)
+)
 
 # nProtect GameGuard bypass (DungeonStalkers 1.8.05 / build 22811395)
 # 1) fake the GameGuard result code so the "GameGuard Init failed" branch is never taken
@@ -151,11 +157,13 @@ def main():
                 last_report = time.time()
                 print("  pid %d: %d/%d patched, retrying ..." % (pid, counts.get(pid, 0), len(PATCHES)))
 
-        if done and any(any('Dungeon' in w for w in windows_of(pid)) for pid in done):
+        win_pids = [pid for pid in done if any('Dungeon' in w for w in windows_of(pid))]
+        if win_pids:
             print("Waiting for the game window ...")
             for _ in range(20):
-                if any(windows_of(pid) for pid in done):
-                    print("  window up")
+                win_pids = [pid for pid in done if windows_of(pid)]
+                if win_pids:
+                    print("  window up (child pid: %d)" % win_pids[-1])
                     print("GameGuard bypass active. Have fun!")
                     return 0
                 time.sleep(0.5)
