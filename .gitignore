@@ -9,6 +9,9 @@ Dumper-7-main/**/GeneratedFiles/
 DungeonStalkers.exe
 DungeonStalkers/*
 Engine/*
+Tools/GGSetup.exe
+Tools/gguninst.exe
+Tools/InstallScript.vdf
 
 # local artefacts / scratch
 __pycache__/
