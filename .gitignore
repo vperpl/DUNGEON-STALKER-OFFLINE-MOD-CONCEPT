@@ -8,6 +8,7 @@ Dumper-7-main/**/GeneratedFiles/
 # original game file
 DungeonStalkers.exe
 DungeonStalkers/*
+Engine/*
 
 # local artefacts / scratch
 __pycache__/
