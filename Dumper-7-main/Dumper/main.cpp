@@ -23,7 +23,7 @@ enum class EFortToastType : uint8
 	EFortToastType_MAX                      = 4,
 };
 
-static const char* const WSLogPath = "C:\\Users\\snipe\\Desktop\\DungeonStalkers_Bypass\\tools\\inj.log";
+static const char* const WSLogPath = "D:\\ian\\Steam\\steamapps\\common\\Dungeon Stalkers\\Tools\\inj.log";
 
 static bool WSRead(const void* Addr, void* Out, size_t N)
 {
@@ -101,8 +101,8 @@ static void WSAddMove(void* Pawn, double DirX, double DirY, double DirZ, int Cou
 	}
 }
 
-static const char* const WSMapFilePath = "C:\\Users\\snipe\\Desktop\\DungeonStalkers_Bypass\\tools\\map.txt";
-static const char* const WSFixFlagPath = "C:\\Users\\snipe\\Desktop\\DungeonStalkers_Bypass\\tools\\fix.txt";
+static const char* const WSMapFilePath = "D:\\ian\\Steam\\steamapps\\common\\Dungeon Stalkers\\Tools\\map.txt";
+static const char* const WSFixFlagPath = "D:\\ian\\Steam\\steamapps\\common\\Dungeon Stalkers\\Tools\\fix.txt";
 
 static void WSAppendLog(const std::string& Text)
 {
@@ -365,15 +365,6 @@ static void WSInputTick()
 	{
 		g_DrvEngaged = true;
 
-		UEClass CtrlCls = ObjectArray::FindClassFast("Controller");
-		UEFunction FResetMove = CtrlCls.GetFunction("Controller", "ResetIgnoreMoveInput");
-		UEFunction FResetLook = CtrlCls.GetFunction("Controller", "ResetIgnoreLookInput");
-		uint8 NoParams[8] = {};
-		if (FResetMove)
-			WSPe(UEObject(g_DrvCtrl), FResetMove, NoParams);
-		if (FResetLook)
-			WSPe(UEObject(g_DrvCtrl), FResetLook, NoParams);
-
 		void* CM = nullptr;
 		WSRead((const uint8*)g_DrvPawn + 0x338, &CM, 8);
 
@@ -462,15 +453,12 @@ static void WSInputTick()
 
 	// --- jump ---
 	const bool bJump = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0;
-	if (bJump && !g_DrvJumpEdge)
+	if (bJump && !g_DrvJumpEdge && g_DrvCM)
 	{
-		UEClass ChCls = ObjectArray::FindClassFast("Character");
-		UEFunction FJump = ChCls.GetFunction("Character", "Jump");
-		if (FJump)
-		{
-			uint8 NoParams[8] = {};
-			WSPe(UEObject(g_DrvPawn), FJump, NoParams);
-		}
+		const uint8 FallMode = 3; // MOVE_Falling
+		const double JumpZ = 450.0;
+		WSWrite(&FallMode, (uint8*)g_DrvCM + 0x221, 1);
+		WSWrite(&JumpZ, (uint8*)g_DrvCM + 0xC8, 8);
 	}
 	g_DrvJumpEdge = bJump;
 }
@@ -754,14 +742,6 @@ static void WSRun()
 	Log << std::hex << "after: ctrl+0x340=" << (int)B340 << "  ctrl+0x554=" << (int)B554 << std::dec << "\n";
 	Log.flush();
 
-	if (Pawn)
-	{
-		Log << "-- phase C: AddMovementInput after fixes --\n";
-		Log.flush();
-		WSAddMove(Pawn, DirX, DirY, DirZ, 30, 50);
-		WSLogLoc(Log, "afterC", Pawn);
-	}
-
 	Log << "=== WSRun done ===\n";
 	Log.flush();
 }
@@ -810,33 +790,12 @@ DWORD MainThread(HMODULE Module)
 	std::cerr << "Started Generation [Dumper-7]!\n";
 	auto DumpStartTime = std::chrono::high_resolution_clock::now();
 
-	Generator::InitEngineCore();
-	Generator::InitInternal();
-
-	if (Settings::Generator::GameName.empty() && Settings::Generator::GameVersion.empty())
-	{
-		FString Name;
-		FString Version;
-		UEClass Kismet = ObjectArray::FindClassFast("KismetSystemLibrary");
-		UEFunction GetGameName = Kismet.GetFunction("KismetSystemLibrary", "GetGameName");
-		UEFunction GetEngineVersion = Kismet.GetFunction("KismetSystemLibrary", "GetEngineVersion");
-
-		Kismet.ProcessEvent(GetGameName, &Name);
-		Kismet.ProcessEvent(GetEngineVersion, &Version);
-
-		Settings::Generator::GameName = Name.ToString();
-		Settings::Generator::GameVersion = Version.ToString();
-	}
-
-	std::cerr << "GameName: " << Settings::Generator::GameName << "\n";
-	std::cerr << "GameVersion: " << Settings::Generator::GameVersion << "\n\n";
-
-	std::cerr << "FolderName: " << (Settings::Generator::GameVersion + '-' + Settings::Generator::GameName) << "\n\n";
-
-	Generator::Generate<CppGenerator>();
-	Generator::Generate<MappingGenerator>();
-	Generator::Generate<IDAMappingGenerator>();
-	Generator::Generate<DumpspaceGenerator>();
+	// Initialize only the core UE reflection / ProcessEvent tables needed by the input driver
+	ObjectArray::Init();
+	CALL_PLATFORM_SPECIFIC_FUNCTION(FName::Init);
+	Off::Init();
+	PropertySizes::Init();
+	CALL_PLATFORM_SPECIFIC_FUNCTION(Off::InSDK::ProcessEvent::InitPE);
 
 	auto DumpFinishTime = std::chrono::high_resolution_clock::now();
 

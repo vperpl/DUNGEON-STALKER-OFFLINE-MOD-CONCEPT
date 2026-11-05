@@ -5,6 +5,14 @@ Dumper-7-main/**/.vs/
 Dumper-7-main/**/ipch/
 Dumper-7-main/**/GeneratedFiles/
 
+# original game file
+DungeonStalkers.exe
+DungeonStalkers/*
+Engine/*
+Tools/GGSetup.exe
+Tools/gguninst.exe
+Tools/InstallScript.vdf
+
 # local artefacts / scratch
 __pycache__/
 *.pyc
