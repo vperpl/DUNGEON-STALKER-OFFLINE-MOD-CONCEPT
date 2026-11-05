@@ -40,19 +40,32 @@ SEED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
 NAMES = ["Game.ini", "Engine.ini", "Input.ini"]
 
 
+k32.SetFileAttributesW.argtypes = [wt.LPCWSTR, wt.DWORD]
+k32.SetFileAttributesW.restype = wt.BOOL
+
+FILE_ATTRIBUTE_READONLY = 0x00000001
+FILE_ATTRIBUTE_NORMAL = 0x00000080
+
+
 def hold(path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     seed = os.path.join(SEED_DIR, os.path.basename(path))
-    if (not os.path.exists(path) or os.path.getsize(path) == 0) and os.path.exists(seed):
-        shutil.copyfile(seed, path)
-        print("restored from config/: %s" % path)
+    if os.path.exists(seed):
+        try:
+            if os.path.exists(path):
+                k32.SetFileAttributesW(path, FILE_ATTRIBUTE_NORMAL)
+            shutil.copyfile(seed, path)
+            print("restored from config/: %s" % path)
+        except OSError as e:
+            print("note: could not overwrite %s (%s)" % (path, e))
     elif not os.path.exists(path):
         # create it so we can lock an empty file too
         open(path, "a").close()
+    k32.SetFileAttributesW(path, FILE_ATTRIBUTE_READONLY)
     h = k32.CreateFileW(
         path,
-        GENERIC_READ | GENERIC_WRITE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,   # no FILE_SHARE_DELETE
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,   # no FILE_SHARE_DELETE; READONLY attribute blocks writes
         None,
         OPEN_ALWAYS,
         0,
@@ -61,7 +74,7 @@ def hold(path):
     if h == INVALID_HANDLE_VALUE or h is None:
         print("failed to hold %s (err=%d)" % (path, ctypes.get_last_error()))
         return None
-    print("holding open: %s" % path)
+    print("holding open (read-only lock): %s" % path)
     return h
 
 

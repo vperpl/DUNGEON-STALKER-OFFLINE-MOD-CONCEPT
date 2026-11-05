@@ -127,10 +127,90 @@ def patch_process(pid):
     return applied
 
 
+import shutil
+import keeper
+
+
+def kill_existing():
+    PROCESS_TERMINATE = 0x0001
+    k32.TerminateProcess.argtypes = [wt.HANDLE, wt.UINT]
+    k32.TerminateProcess.restype = wt.BOOL
+    pids = live_pids()
+    if pids:
+        print("Closing existing Dungeon Stalkers process(es):", pids)
+        for pid in pids:
+            h = k32.OpenProcess(PROCESS_TERMINATE, False, pid)
+            if h:
+                k32.TerminateProcess(h, 0)
+                k32.CloseHandle(h)
+        time.sleep(1.5)
+
+
+def focus_game_window(pid):
+    target = []
+    @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    def cb(hwnd, lparam):
+        if not user32.IsWindowVisible(hwnd):
+            return True
+        wpid = wt.DWORD(0)
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(wpid))
+        if wpid.value == pid:
+            n = user32.GetWindowTextLengthW(hwnd)
+            if n > 0:
+                b = ctypes.create_unicode_buffer(n + 1)
+                user32.GetWindowTextW(hwnd, b, n + 1)
+                if 'Dungeon' in b.value:
+                    target.append(hwnd)
+        return True
+    user32.EnumWindows(cb, 0)
+    if target:
+        hwnd = target[0]
+        user32.keybd_event(0x12, 0, 0, 0)
+        user32.keybd_event(0x12, 0, 0x0002, 0)
+        user32.ShowWindow(hwnd, 9)
+        user32.SetForegroundWindow(hwnd)
+
+
+def inject_driver(child_pid):
+    src_dll = os.path.join(_HERE, "bin", "Dumper-7.dll")
+    dst_dll = os.path.join(os.path.dirname(EXE), "Dumper-7.dll")
+    dll_path = dst_dll if os.path.exists(dst_dll) else src_dll
+    if os.path.exists(src_dll):
+        try:
+            shutil.copyfile(src_dll, dst_dll)
+            dll_path = dst_dll
+        except OSError:
+            pass
+    if not os.path.exists(dll_path):
+        print("WARNING: Dumper-7.dll not found at", dll_path)
+        return
+    inject_py = os.path.join(_HERE, "Tools", "inject.py")
+    print("Injecting %s into child pid %d ..." % (os.path.basename(dll_path), child_pid))
+    subprocess.run([sys.executable, inject_py, str(child_pid), dll_path])
+    time.sleep(1.5)
+    focus_game_window(child_pid)
+    log_path = os.path.join(_HERE, "Tools", "inj.log")
+    for _ in range(10):
+        if os.path.exists(log_path) and os.path.getsize(log_path) > 0:
+            break
+        time.sleep(0.5)
+    if os.path.exists(log_path):
+        print("--- Tools/inj.log ---")
+        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            for line in f.read().splitlines()[-8:]:
+                print(" ", line)
+
+
 def main():
     if not os.path.exists(EXE):
         print("ERROR: game not found at", EXE)
         return 1
+
+    kill_existing()
+
+    print("Restoring & locking offline config files ...")
+    handles = [keeper.hold(os.path.join(keeper.DEFAULT_DIR, n)) for n in keeper.NAMES]
+    handles = [h for h in handles if h]
 
     print("Starting Dungeon Stalkers ...")
     proc = subprocess.Popen([EXE], cwd=os.path.dirname(EXE))
@@ -140,9 +220,10 @@ def main():
     counts = {}
     start = time.time()
     last_report = 0.0
+    win_seen_at = None
 
     # nEOS (Epic emulator) relaunches the game, and GameGuard unpacks ~1.5s in,
-    # so keep patching every game process that shows up until one is clean.
+    # so keep patching every game process that shows up until both parent & child are clean.
     while time.time() - start < 45:
         for pid in live_pids():
             if pid in done:
@@ -159,17 +240,30 @@ def main():
 
         win_pids = [pid for pid in done if any('Dungeon' in w for w in windows_of(pid))]
         if win_pids:
-            print("Waiting for the game window ...")
-            for _ in range(20):
-                win_pids = [pid for pid in done if windows_of(pid)]
+            if win_seen_at is None:
+                win_seen_at = time.time()
+                print("  window detected (child pid: %d), continuing patch watch ..." % win_pids[-1])
+            elif time.time() - win_seen_at >= 3.0:
+                child_pid = win_pids[-1]
+                print("\nGameGuard bypass active! (window child pid: %d)" % child_pid)
+                print("IMPORTANT: Wait until the 3D tutorial level finishes loading on screen")
+                print("           (past the black startup screen and loading screen).")
+                try:
+                    input("Press ENTER once you see your character in the level to inject the input driver...")
+                except EOFError:
+                    pass
+                win_pids = [pid for pid in live_pids() if any('Dungeon' in w for w in windows_of(pid))]
                 if win_pids:
-                    print("  window up (child pid: %d)" % win_pids[-1])
-                    print("GameGuard bypass active. Have fun!")
-                    return 0
-                time.sleep(0.5)
-            print("GameGuard bypass active.")
-            return 0
-        time.sleep(0.3)
+                    child_pid = win_pids[-1]
+                inject_driver(child_pid)
+                print("\nOffline driver injected! Keep this window open while playing (holds config lock).")
+                print("Hotkeys in-game: WASD=Move | Mouse=Look | Space=Jump | F1=Toggle Driver | F6=Unload")
+                try:
+                    input("\nPress ENTER here when you are done playing to exit...")
+                except EOFError:
+                    pass
+                return 0
+        time.sleep(0.25)
 
     if done:
         print("GameGuard bypass applied (window not confirmed yet).")

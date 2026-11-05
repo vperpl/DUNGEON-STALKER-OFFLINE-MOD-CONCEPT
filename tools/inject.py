@@ -24,21 +24,57 @@ ACCESS = 0x0002 | 0x0008 | 0x0010 | 0x0020 | 0x0040 | 0x0400
 user32 = ctypes.WinDLL('user32', use_last_error=True)
 
 
+class PROCESSENTRY32W(ctypes.Structure):
+    _fields_ = [
+        ("dwSize", wt.DWORD),
+        ("cntUsage", wt.DWORD),
+        ("th32ProcessID", wt.DWORD),
+        ("th32DefaultHeapID", ctypes.c_size_t),
+        ("th32ModuleID", wt.DWORD),
+        ("cntThreads", wt.DWORD),
+        ("th32ParentProcessID", wt.DWORD),
+        ("pcPriClassBase", wt.LONG),
+        ("dwFlags", wt.DWORD),
+        ("szExeFile", ctypes.c_wchar * 260),
+    ]
+
+
+def game_exe_pids():
+    snap = k32.CreateToolhelp32Snapshot(0x00000002, 0)
+    if snap in (None, ctypes.c_void_p(-1).value):
+        return set()
+    out = set()
+    try:
+        pe = PROCESSENTRY32W()
+        pe.dwSize = ctypes.sizeof(PROCESSENTRY32W)
+        if k32.Process32FirstW(snap, ctypes.byref(pe)):
+            while True:
+                if pe.szExeFile.lower() == 'dungeonstalkers-win64-shipping.exe':
+                    out.add(pe.th32ProcessID)
+                if not k32.Process32NextW(snap, ctypes.byref(pe)):
+                    break
+    finally:
+        k32.CloseHandle(snap)
+    return out
+
+
 def find_game_window_pid():
+    valid_pids = game_exe_pids()
     found = []
     @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
     def cb(hwnd, lparam):
         if not user32.IsWindowVisible(hwnd):
             return True
+        wpid = wt.DWORD(0)
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(wpid))
+        if wpid.value not in valid_pids:
+            return True
         n = user32.GetWindowTextLengthW(hwnd)
         if n > 0:
             b = ctypes.create_unicode_buffer(n + 1)
             user32.GetWindowTextW(hwnd, b, n + 1)
-            if 'Dungeon' in b.value:
-                wpid = wt.DWORD(0)
-                user32.GetWindowThreadProcessId(hwnd, ctypes.byref(wpid))
-                if wpid.value and wpid.value not in found:
-                    found.append(wpid.value)
+            if 'Dungeon' in b.value and wpid.value not in found:
+                found.append(wpid.value)
         return True
     user32.EnumWindows(cb, 0)
     return found[-1] if found else None
